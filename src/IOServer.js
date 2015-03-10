@@ -4,24 +4,26 @@ var socketio = require('socket.io');
 
 var IOServer = function(options) {
     var self = this;
-    this.sockets = [];
+    this.sockets = {};
     this.io = socketio(options.server);
     this.io.on('connection', function(socket){
         console.log('socket io connection recieved');
-
-        self.sockets.push(socket);
-        emitter.on('mentioned', function(data) {
-            self.handleNewMention(socket, data)
-        });
-        emitter.on('ioserver:mention_count_update', function(data) {
-            self.handleMentionCountUpdate(socket, data);
-        });
+        console.log(socket.id);
+        self.sockets[socket.id] = socket;
     });
 
     this.io.on('disconnect', function(socket) {
         console.log('disconnect');
         console.log(socket);
+        delete self.sockets[socket.id];
     });
+
+    // emitter.on('mentioned', function(data) {
+    //     self.handleNewMention(socket, data)
+    // });
+    // emitter.on('ioserver:mention_count_update', function(data) {
+    //     self.handleMentionCountUpdate(socket, data);
+    // });
 };
 
 /**

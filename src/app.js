@@ -1,5 +1,6 @@
 var app = require('express')(),
     cors = require('cors'),
+    compression = require('compression'),
     _ = require('lodash'),
     Promise = require('bluebird'),
     mongoose = Promise.promisifyAll(require('mongoose')),
@@ -11,6 +12,7 @@ var app = require('express')(),
     ArtistsController = require('./controllers/artists');
 
 app.use(cors());
+app.use(compression());
 
 mongoose.connect(config.mongo.connection);
 mongoose.connection.on('connected', function() {

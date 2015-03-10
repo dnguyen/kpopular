@@ -1,4 +1,5 @@
 var _ = require('lodash'),
+    Promise = require('bluebird'),
     moment = require('moment'),
     models = require('../models'),
     MentionsService = require('../services/data/mentions');
@@ -11,6 +12,43 @@ function createBuckets(amount) {
     }
 
     return buckets;
+}
+
+function getMentionsWithStatistic(name, statistic) {
+    var deferred = Promise.defer();
+    var mentionsService = new MentionsService();
+
+    if (statistic === 'hour') {
+        var now = moment();
+        mentionsService.getLastHour({ word: name }).then(function(data) {
+
+            var currentBucket = 11,
+                timeNow = moment(),
+                currentMinTime = moment().subtract(5, 'minutes'),
+                currentMaxTime = moment(),
+                buckets = createBuckets(12);
+
+            // data is retuned sorted by date/time in descending order. so we can just
+            // iterate through each one and add it to the current bucket until the current mention's
+            // time is outside the range of the current bucket
+            _.each(data, function(mention) {
+                if (currentBucket >= 0) {
+                    var currentMentionDate = moment(mention.date);
+                    if (currentMentionDate.isAfter(currentMinTime) && currentMentionDate.isBefore(currentMaxTime)) {
+                        buckets[currentBucket].push(mention);
+                    } else {
+                        currentBucket--;
+                        currentMinTime.subtract(5, 'minutes');
+                        currentMaxTime.subtract(5, 'minutes');
+                    }
+                }
+            });
+
+            deferred.resolve(buckets);
+        });
+
+        return deferred.promise;
+    }
 }
 
 var ArtistsController = {
@@ -31,36 +69,12 @@ var ArtistsController = {
 
     getMentions: function(req, res) {
         var name = req.params.name,
-            statistic = req.query.statistic,
-            mentionsService = new MentionsService();
+            statistic = req.query.statistic;
 
         if (statistic) {
-            if (statistic === 'hour') {
-                var now = moment();
-                mentionsService.getLastHour({ word: name }).then(function(data) {
-
-                    // keep pushing onto bucket i until time > i's max time (currentMaxTime),
-                    // Then move onto the next bucket
-                    var currentBucket = 11,
-                        timeNow = moment(),
-                        currentMinTime = moment().subtract(5, 'minutes'),
-                        currentMaxTime = moment(),
-                        buckets = createBuckets(12);
-
-                    _.each(data, function(mention) {
-                        var currentMentionDate = moment(mention.date);
-                        if (currentMentionDate.isAfter(currentMinTime) && currentMentionDate.isBefore(currentMaxTime)) {
-                            buckets[currentBucket].push(mention);
-                        } else {
-                            currentBucket--;
-                            currentMinTime.subtract(5, 'minutes');
-                            currentMaxTime.subtract(5, 'minutes');
-                        }
-                    });
-
-                    return res.json(buckets);
-                });
-            }
+            getMentionsWithStatistic(name, statistic).then(function(data) {
+                return res.json(data);
+            });
         }
     }
 };
