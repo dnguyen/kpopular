@@ -17,15 +17,15 @@ var MentionsService = function() {
     // }, 5000);
 };
 
+/**
+ * Get all mentions that occured in the last hour for an artist
+ */
 MentionsService.prototype.getLastHour = function(data) {
-    var deferred = Promise.defer();
-
-    // Get all mentions that happened in the last hour from mongo
-    // Split into 10 buckets, each bucket representing 6 minutes
-    var timeNow = moment(),
+    var deferred = Promise.defer(),
+        timeNow = moment(),
         timeHourAgo = moment().subtract(1, 'hours');
 
-    models.Mentions.getWithinTime(data.word, timeNow.toDate(), timeHourAgo.toDate()).then(function(data) {
+    models.Mentions.getWithinTime(data.word.toUpperCase(), timeNow.toDate(), timeHourAgo.toDate()).then(function(data) {
         deferred.resolve(data);
     });
 

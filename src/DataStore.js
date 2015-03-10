@@ -28,7 +28,7 @@ var DataStore = {
             if (docs.length === 0) {
                 var newMention = new models.Mention({
                     hash: hash,
-                    word: word,
+                    word: word.toUpperCase(),
                     type: data.type,
                     from: data.from,
                     contents: data.title,
@@ -36,51 +36,24 @@ var DataStore = {
                 });
                 newMention.save(function(err) {
                     if (!err) {
-                        console.log('[INSERT] [' + data.type + '] ' + data.title);
+                        //console.log('[INSERT] [' + data.type + '] ' + data.title);
                     }
                 });
 
                 models.Keyword.update(
-                    { word: word },
+                    { word: word.toUpperCase() },
                     {
                         $inc: { count: 1 }
                     },
                     { upsert: true }, function(err) {
                         if (!err) {
-                            console.log('Upsert done');
+                            //console.log('[UPSERT] ' + word.toUpperCase());
                         }
                 });
 
                 emitter.emit('mentioned', newMention);
             }
         });
-        // var self = this,
-        //     trackerHits = this.db.collection('trackerhits'),
-        //     hash = crypto.createHash('md5').update(data.from + word).digest('hex');
-
-        // // Check if link has already been parsed previously, if not add it to the database
-        // trackerHits.find({ hash: hash }).toArray(function (err, docs) {
-        //     if (docs.length === 0) {
-        //         var insertObj = {
-        //             hash: hash,
-        //             word: word,
-        //             type: data.type,
-        //             from: data.from,
-        //             contents: data.title,
-        //             date:  data.date
-        //         };
-
-        //         self.insertTrackerHit(insertObj).then(function() {
-        //             console.log('[INSERT DONE] ' + word + ' ' + data.type + ' ' + data.from);
-        //             emitter.emit('mentioned', insertObj)
-        //         });
-
-        //         self.upsertKeyword(word).then(function() {
-        //             console.log('[UPSERT DONE] ' + word + ' ' + data.type + ' ' + data.from);
-        //         });
-
-        //     }
-        // });
     },
 
     /**

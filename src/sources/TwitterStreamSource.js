@@ -28,7 +28,7 @@ TwitterStreamSource.prototype.parse = function() {
         _.each(config.keywords, function(word) {
             if (tweet.text.indexOf(word) > -1 || tweet.text.indexOf(word.toLowerCase()) > -1) {
                 var created = moment(tweet.created_at, 'dd MMM DD HH:mm:ss ZZ YYYY', 'en');
-                console.log(tweet.text);
+                //console.log(tweet.text);
                 // DataStore.increment(word, 1);
                 DataStore.addHit(word, {
                     from: tweet.id_str,
