@@ -30,12 +30,12 @@ TwitterStreamSource.prototype.parse = function() {
                 var created = moment(tweet.created_at, 'dd MMM DD HH:mm:ss ZZ YYYY', 'en');
                 console.log(tweet.text);
                 // DataStore.increment(word, 1);
-                // DataStore.addHit(word, {
-                //     from: tweet.id_str,
-                //     title: tweet.text,
-                //     type: 'tweet',
-                //     date: created.toDate()
-                // });
+                DataStore.addHit(word, {
+                    from: tweet.id_str,
+                    title: tweet.text,
+                    type: 'tweet',
+                    date: created.toDate()
+                });
             }
         });
     });

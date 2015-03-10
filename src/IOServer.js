@@ -8,10 +8,13 @@ var IOServer = function(options) {
     this.io = socketio(options.server);
     this.io.on('connection', function(socket){
         console.log('socket io connection recieved');
-        console.log(socket);
+
         self.sockets.push(socket);
         emitter.on('mentioned', function(data) {
             self.handleNewMention(socket, data)
+        });
+        emitter.on('ioserver:mention_count_update', function(data) {
+            self.handleMentionCountUpdate(socket, data);
         });
     });
 
@@ -26,7 +29,14 @@ var IOServer = function(options) {
  * @return {[type]} [description]
  */
 IOServer.prototype.handleNewMention = function(socket, data) {
-    socket.emit('mentioned', data);
+    //socket.emit('mentioned', data);
+};
+
+/**
+ *  Send client updated mention count for a word.
+ */
+IOServer.prototype.handleMentionCountUpdate = function(socket, data) {
+    socket.emit('mention_count_update', data);
 };
 
 module.exports = IOServer;

@@ -50,6 +50,8 @@ var DataStore = {
                             console.log('Upsert done');
                         }
                 });
+
+                emitter.emit('mentioned', newMention);
             }
         });
         // var self = this,

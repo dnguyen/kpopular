@@ -1,5 +1,6 @@
 
 var fs = require('fs'),
+    Promise = require('bluebird'),
     mongoose = require('mongoose'),
     _ = require('lodash');
 
