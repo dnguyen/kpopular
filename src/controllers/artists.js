@@ -18,37 +18,45 @@ function getMentionsWithStatistic(name, statistic) {
     var deferred = Promise.defer();
     var mentionsService = new MentionsService();
 
-    if (statistic === 'hour') {
-        var now = moment();
-        mentionsService.getLastHour({ word: name }).then(function(data) {
+    mentionsService.getMentionsWithStatistic(name, statistic).then(function(data) {
 
-            var currentBucket = 11,
-                timeNow = moment(),
-                currentMinTime = moment().subtract(5, 'minutes'),
-                currentMaxTime = moment(),
-                buckets = createBuckets(12);
+        console.log('pulled for artist ' + name + ' ' + data.length);
+        // Default to statistic=hour
+        var currentBucket = 11,
+            buckets = createBuckets(12),
+            currentMinTime  = moment().subtract(5, 'minutes'),
+            currentMaxTime = moment();
 
-            // data is retuned sorted by date/time in descending order. so we can just
-            // iterate through each one and add it to the current bucket until the current mention's
-            // time is outside the range of the current bucket
-            _.each(data, function(mention) {
-                if (currentBucket >= 0) {
-                    var currentMentionDate = moment(mention.date);
-                    if (currentMentionDate.isAfter(currentMinTime) && currentMentionDate.isBefore(currentMaxTime)) {
-                        buckets[currentBucket].push(mention);
-                    } else {
-                        currentBucket--;
-                        currentMinTime.subtract(5, 'minutes');
-                        currentMaxTime.subtract(5, 'minutes');
-                    }
+        if (statistic === 'day') {
+            currentMinTime = moment().subtract(1, 'hours');
+        }
+
+        // data is retuned sorted by date/time in descending order. so we can just
+        // iterate through each one and add it to the current bucket until the current mention's
+        // time is outside the range of the current bucket
+        _.each(data, function(mention) {
+            var currentMentionDate = moment(mention.date);
+            if (currentMentionDate.isAfter(currentMinTime) && currentMentionDate.isBefore(currentMaxTime)) {
+                buckets[currentBucket].push(mention);
+            } else {
+                if (currentBucket > 0) {
+                    currentBucket--;
                 }
-            });
 
-            deferred.resolve(buckets);
+                if (statistic === 'hour') {
+                    currentMinTime.subtract(5, 'minutes');
+                    currentMaxTime.subtract(5, 'minutes');
+                } else if (statistic === 'day') {
+                    currentMinTime = currentMinTime.subtract(2, 'hours');
+                    currentMaxTime = currentMaxTime.subtract(2, 'hours');
+                }
+            }
         });
 
-        return deferred.promise;
-    }
+        deferred.resolve(buckets);
+    });
+
+    return deferred.promise;
 }
 
 var ArtistsController = {
@@ -72,9 +80,13 @@ var ArtistsController = {
             statistic = req.query.statistic;
 
         if (statistic) {
-            getMentionsWithStatistic(name, statistic).then(function(data) {
-                return res.json(data);
-            });
+            if (statistic === 'hour' || statistic === 'day') {
+                getMentionsWithStatistic(name, statistic).then(function(data) {
+                    return res.json(data);
+                });
+            } else {
+                return res.status(500).json({ error: 'Invalid statistic option' });
+            }
         }
     }
 };

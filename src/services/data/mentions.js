@@ -20,12 +20,18 @@ var MentionsService = function() {
 /**
  * Get all mentions that occured in the last hour for an artist
  */
-MentionsService.prototype.getLastHour = function(data) {
+MentionsService.prototype.getMentionsWithStatistic = function(word, statistic) {
     var deferred = Promise.defer(),
         timeNow = moment(),
-        timeHourAgo = moment().subtract(1, 'hours');
+        timeMin;
 
-    models.Mentions.getWithinTime(data.word.toUpperCase(), timeNow.toDate(), timeHourAgo.toDate()).then(function(data) {
+    if (statistic === 'hour') {
+        timeMin = moment().subtract(1, 'hours');
+    } else if (statistic === 'day') {
+        timeMin = moment().subtract(1, 'day');
+    }
+
+    models.Mentions.getWithinTime(word.toUpperCase(), timeNow.toDate(), timeMin.toDate()).then(function(data) {
         deferred.resolve(data);
     });
 

@@ -30,7 +30,9 @@ module.exports = {
                     }
                 },
                 $orderby: { date: -1 }
-            }, function(err, docs) {
+            },
+            { hash: 1, contents: 1, date: 1, _id: 0 },
+            function(err, docs) {
                 if (err) throw err;
 
                 deferred.resolve(docs);

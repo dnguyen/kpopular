@@ -36,7 +36,7 @@ var DataStore = {
                 });
                 newMention.save(function(err) {
                     if (!err) {
-                        //console.log('[INSERT] [' + data.type + '] ' + data.title);
+                        console.log('[INSERT ' + word + '] [' + data.type + '] ' + data.title);
                     }
                 });
 
