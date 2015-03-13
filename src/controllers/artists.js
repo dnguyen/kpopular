@@ -28,7 +28,7 @@ function getMentionsWithStatistic(name, statistic) {
             currentMaxTime = moment();
 
         if (statistic === 'day') {
-            currentMinTime = moment().subtract(1, 'hours');
+            currentMinTime = moment().subtract(2, 'hours');
         }
 
         // data is retuned sorted by date/time in descending order. so we can just

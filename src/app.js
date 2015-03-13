@@ -9,7 +9,8 @@ var app = require('express')(),
     TrackingService = require('./TrackingService.js'),
     models = require('./models'),
     MentionsController = require('./controllers/mentions'),
-    ArtistsController = require('./controllers/artists');
+    ArtistsController = require('./controllers/artists'),
+    RankingController = require('./controllers/ranking');
 
 app.use(cors());
 app.use(compression());
@@ -42,6 +43,7 @@ function start() {
     app.get('/artists/:name', ArtistsController.get);
     app.get('/artists/:name/mentions', ArtistsController.getMentions);
     app.get('/mentions', MentionsController.index);
+    app.get('/ranking', RankingController.index);
 
 }
 
