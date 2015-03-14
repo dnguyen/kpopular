@@ -77,12 +77,21 @@ var ArtistsController = {
 
     getMentions: function(req, res) {
         var name = req.params.name,
-            statistic = req.query.statistic;
+            statistic = req.query.statistic,
+            content = req.query.content;
 
         if (statistic) {
             if (statistic === 'hour' || statistic === 'day') {
                 getMentionsWithStatistic(name, statistic).then(function(data) {
-                    return res.json(data);
+                    if (content && content === 'all') {
+                        return res.json(data);
+                    } else {
+                        var returnData = [];
+                        _.each(data, function(bucket) {
+                            returnData.push(bucket.length);
+                        });
+                        return res.json(returnData);
+                    }
                 });
             } else {
                 return res.status(500).json({ error: 'Invalid statistic option' });

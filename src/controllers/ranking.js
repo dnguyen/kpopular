@@ -30,6 +30,7 @@ var RankingController = {
         // Force popular new releases towards the top by weighing chart rankings heavily
 
         // First get number of mentions for each word, then find chart rankings and modify popularity accordingly
+        // TODO: Move chart rankings to database instead of making a request and parsing every time a request comes in
         Promise.map(config.keywords, function(wordObj) {
             return models.Mentions.getWithinTime(wordObj.word, startTime.toDate(), endTime.toDate()).then(function(data) {
                 rankings.push({ word: wordObj.word, popularity: data.length });
@@ -47,7 +48,6 @@ var RankingController = {
         })
         .then(getGaonRankings)
         .then(function(gaonRankings) {
-
             _.each(rankings, function(currRank) {
                 _.each(gaonRankings, function(gaonRank) {
                     if (gaonRank.artist.toUpperCase().indexOf(currRank.word.toUpperCase()) > -1) {
@@ -98,6 +98,28 @@ function getGaonRankings() {
         _.each(rankingEls, function(ranking) {
             var rankNum = $(ranking).find('.ranking').text(),
                 artist = $(ranking).find('.singer').text().split('|')[0];
+
+            rankings.push({ artist: artist, rank: rankNum });
+        });
+
+        deferred.resolve(rankings);
+    });
+
+    return deferred.promise;
+}
+
+function getMelonRankings() {
+    var deferred = Promise.defer();
+
+    var req = request('http://www.melon.com/chart/index.htm', function(err, resp, body) {
+        var $ = cheerio.load(body),
+            rankingsTable = $('table tbody'),
+            rankingEls = rankingsTable.children(),
+            rankings = [];
+
+        _.each(rankingEls, function(ranking) {
+            var rankNum = $(ranking).find('.rank').text(),
+                artist = $(ranking).find('a.play_artist').children().first().text();
 
             rankings.push({ artist: artist, rank: rankNum });
         });
