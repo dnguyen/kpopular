@@ -4,6 +4,48 @@ var _ = require('lodash'),
     models = require('../models'),
     MentionsService = require('../services/data/mentions');
 
+var ArtistsController = {
+    index: function(req, res) {
+
+        models.Keyword.find({}, function(err, docs) {
+            return res.json(docs);
+        });
+
+    },
+
+    get: function(req, res) {
+        console.log(req.params);
+        models.Keyword.find({ word: req.params.name.toUpperCase() }, function(err, docs) {
+            return res.json(docs);
+        });
+    },
+
+    getMentions: function(req, res) {
+        var name = req.params.name,
+            statistic = req.query.statistic,
+            content = req.query.content;
+
+        if (statistic) {
+            if (statistic === 'hour' || statistic === 'day' || statistic === 'minutes') {
+                getMentionsWithStatistic(name, statistic).then(function(data) {
+                    if (content && content === 'all') {
+                        return res.json(data);
+                    } else {
+                        var returnData = [];
+                        _.each(data, function(bucket) {
+                            if (bucket.length > 0) {
+                                returnData.push(bucket.length);
+                            }
+                        });
+                        return res.json(returnData);
+                    }
+                });
+            } else {
+                return res.status(500).json({ error: 'Invalid statistic option' });
+            }
+        }
+    }
+};
 
 function createBuckets(amount) {
     var buckets = [];
@@ -23,22 +65,23 @@ function getMentionsWithStatistic(name, statistic) {
         console.log('pulled for artist ' + name + ' ' + data.length);
         // Default to statistic=hour
         var totalBucketCount = 12;
-        var currentTime = moment().startOf('hour');
+        var currentTime = moment().startOf('minute');
         if (statistic === 'minutes') {
             currentTime = moment().startOf('minute');
             totalBucketCount = 5;
         }
 
-
         var buckets = createBuckets(totalBucketCount),
             currentBucket = buckets.length - 1,
             currentMinTime  = currentTime.clone().subtract(5, 'minutes'),
             currentMaxTime = currentTime.clone();
+
         if (statistic === 'day') {
             currentMinTime = currentTime.clone().subtract(2, 'hours');
         } else if (statistic === 'minutes') {
             currentMinTime = currentTime.clone().subtract(12, 'seconds');
         }
+
         console.log('currenttime', currentTime.format());
         console.log('start range', currentMinTime.format(), currentMaxTime.format());
         console.log(data.length);
@@ -77,53 +120,5 @@ function getMentionsWithStatistic(name, statistic) {
 
     return deferred.promise;
 }
-
-var ArtistsController = {
-    index: function(req, res) {
-
-        models.Keyword.find({}, function(err, docs) {
-            return res.json(docs);
-        });
-
-    },
-
-    get: function(req, res) {
-        console.log(req.params);
-        models.Keyword.find({ word: req.params.name.toUpperCase() }, function(err, docs) {
-            return res.json(docs);
-        });
-    },
-
-    getMentions: function(req, res) {
-        var name = req.params.name,
-            statistic = req.query.statistic,
-            content = req.query.content;
-
-        // var mentionsService = new MentionsService();
-
-        // mentionsService.getMentionsWithStatistic(name, statistic).then(function(data) {
-        //     console.log(data.length);
-        //     console.log(data);
-        // });
-
-        if (statistic) {
-            if (statistic === 'hour' || statistic === 'day' || statistic === 'minutes') {
-                getMentionsWithStatistic(name, statistic).then(function(data) {
-                    if (content && content === 'all') {
-                        return res.json(data);
-                    } else {
-                        var returnData = [];
-                        _.each(data, function(bucket) {
-                            returnData.push(bucket.length);
-                        });
-                        return res.json(returnData);
-                    }
-                });
-            } else {
-                return res.status(500).json({ error: 'Invalid statistic option' });
-            }
-        }
-    }
-};
 
 module.exports = ArtistsController;

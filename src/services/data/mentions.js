@@ -22,7 +22,7 @@ var MentionsService = function() {
  */
 MentionsService.prototype.getMentionsWithStatistic = function(word, statistic) {
     var deferred = Promise.defer(),
-        timeNow = moment().startOf('hour'),
+        timeNow = moment().startOf('minute'),
         timeMin;
 
     if (statistic === 'hour') {
