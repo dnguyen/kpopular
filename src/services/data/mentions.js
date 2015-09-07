@@ -22,13 +22,16 @@ var MentionsService = function() {
  */
 MentionsService.prototype.getMentionsWithStatistic = function(word, statistic) {
     var deferred = Promise.defer(),
-        timeNow = moment(),
+        timeNow = moment().startOf('hour'),
         timeMin;
 
     if (statistic === 'hour') {
-        timeMin = moment().subtract(1, 'hours');
+        timeMin = timeNow.clone().subtract(1, 'hours');
     } else if (statistic === 'day') {
-        timeMin = moment().subtract(1, 'day');
+        timeMin = timeNow.clone().subtract(1, 'day');
+    } else if(statistic === 'minutes') {
+        timeNow = moment().startOf('minute');
+        timeMin = timeNow.clone().subtract(1, 'minutes');
     }
 
     models.Mentions.getWithinTime(word.toUpperCase(), timeNow.toDate(), timeMin.toDate()).then(function(data) {

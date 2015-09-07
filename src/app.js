@@ -32,7 +32,7 @@ function start() {
 
     trackingService.start();
 
-    server.listen(3000, function() {
+    server.listen(3005, function() {
         var host = server.address().address;
         var port = server.address().port;
 
