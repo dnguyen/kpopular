@@ -1,5 +1,5 @@
 
-var bluebird = require('bluebird'),
+var Promise = require('bluebird'),
     mongoose = require('mongoose');
 
 var mentionSchema = mongoose.Schema({
