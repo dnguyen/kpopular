@@ -6,6 +6,8 @@ var _ = require('lodash'),
     config = require('../config'),
     models = require('../models');
 
+var CHART_WEIGHT = 50000;
+
 var RankingController = {
     index: function(req, res) {
         var statistic = req.query.statistic,
@@ -33,25 +35,27 @@ var RankingController = {
         // TODO: Move chart rankings to database instead of making a request and parsing every time a request comes in
         Promise.map(config.keywords, function(wordObj) {
             return models.Mentions.getWithinTime(wordObj.word, startTime.toDate(), endTime.toDate()).then(function(data) {
-                rankings.push({ word: wordObj.word, popularity: data.length });
+                rankings.push({ wordObj: wordObj, popularity: data.length });
             });
         })
         .then(GetMnetRankings)
         .then(function(mnetRankings) {
+            console.log(rankings);
             _.each(rankings, function(currRank) {
                 _.each(mnetRankings, function(mnetRank) {
-                    if (currRank.word === mnetRank.artist.toUpperCase()) {
-                        currRank.popularity += parseInt(50000 / mnetRank.rank);
+                    if (isInRankings(mnetRankings, currRank.wordObj, mnetRank.artist)) {
+                        currRank.popularity += parseInt(CHART_WEIGHT / mnetRank.rank);
                     }
                 });
             });
         })
         .then(getGaonRankings)
         .then(function(gaonRankings) {
+            console.log('gaon', gaonRankings);
             _.each(rankings, function(currRank) {
                 _.each(gaonRankings, function(gaonRank) {
-                    if (gaonRank.artist.toUpperCase().indexOf(currRank.word.toUpperCase()) > -1) {
-                        currRank.popularity += parseInt(50000 / gaonRank.rank);
+                    if (isInRankings(gaonRankings, currRank.wordObj, gaonRank.artist)) {
+                        currRank.popularity += parseInt(CHART_WEIGHT / gaonRank.rank);
                     }
                 });
             });
@@ -59,25 +63,68 @@ var RankingController = {
             rankings = _.sortBy(rankings, function(ranking) {
                 return -ranking.popularity;
             });
-            return res.json(rankings);
+
+            var output = [];
+            _.each(rankings, function(ranking) {
+                output.push({
+                    artist: ranking.wordObj.word,
+                    popularity: ranking.popularity
+                });
+            });
+
+            return res.json(output);
         });
     }
 };
+
+function isInRankings(parsedRankings, wordObj, parsedArtistName) {
+    var artistFoundInRankings = false;
+
+    if (wordObj.word.toUpperCase().indexOf(parsedArtistName.toUpperCase()) > -1) {
+        artistFoundInRankings = true;
+    }
+
+    _.each(wordObj.alternateWords, function(word) {
+        _.each(parsedRankings, function(rank) {
+            if (word.toUpperCase().indexOf(rank.artist.toUpperCase()) > -1) {
+                artistFoundInRankings = true;
+            }
+        });
+    });
+
+    return artistFoundInRankings;
+}
 
 function GetMnetRankings() {
     var deferred = Promise.defer();
 
     var req = request('http://mwave.interest.me/mcountdown/voteState.m', function(err, resp, body) {
         var $ = cheerio.load(body),
-            rankingsTable = $('.music_list_type01 tbody'),
-            rankingEls = rankingsTable.children(),
+            rankingsTable = $('.voteWeekListResult'),
+            rankingOrderedLists = rankingsTable.children().last(),
+            top3OrderedList = rankingsTable.children().first();
             rankings = [];
 
-        _.each(rankingEls, function(ranking) {
-            var rankNum = $(ranking).find('img').attr('alt'),
-                artist = $(ranking).find('.artist').text();
+        _.each(top3OrderedList, function(orderedList) {
+            var rankingListItems = $(orderedList).children();
+            _.each(rankingListItems, function(listItem) {
+                var rank = $(listItem).find('i.rank').text().trim();
+                var artist = $(listItem).find('.title').children().last().text().trim();
 
-            rankings.push({ artist: artist, rank: rankNum });
+                rankings.push({ artist: artist, rank: rank });
+            });
+        });
+
+        _.each(rankingOrderedLists, function(orderedList) {
+            var rankingListItems = $(orderedList).children();
+            _.each(rankingListItems, function(listItem) {
+                var rank = $(listItem).find('i.rank').text().trim();
+                var artist = $(listItem).find('.artist').find('a').text().trim();
+
+                if (artist !== '' && rank !== '') {
+                    rankings.push({ artist: artist, rank: rank });
+                }
+            });
         });
 
         deferred.resolve(rankings);
@@ -96,10 +143,11 @@ function getGaonRankings() {
             rankings = [];
 
         _.each(rankingEls, function(ranking) {
-            var rankNum = $(ranking).find('.ranking').text(),
-                artist = $(ranking).find('.singer').text().split('|')[0];
-
-            rankings.push({ artist: artist, rank: rankNum });
+            var rankNum = $(ranking).find('.ranking').text().trim(),
+                artist = $(ranking).find('.singer').text().split('|')[0].trim();
+            if (rankNum !== '' && artist !== '') {
+                rankings.push({ artist: artist, rank: rankNum });
+            }
         });
 
         deferred.resolve(rankings);
